@@ -1,0 +1,9 @@
+# Optional but recommended for no-split M4A/AAC transcoding without system ffmpeg.
+av==15.1.0
+
+# Optional pyannote-based speaker diarization. Keep this below 4.x for Python 3.9 compatibility.
+pyannote.audio>=3.3,<4
+huggingface_hub<1
+
+# Lightweight local web UI.
+Flask>=3,<4

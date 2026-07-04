@@ -1,0 +1,12 @@
+.env
+.DS_Store
+.vscode/
+.venv/
+.pycache/
+__pycache__/
+transcripts_cache/
+.model_cache/
+.diarization_cache/
+.pip_cache/
+.ui_uploads/
+output/

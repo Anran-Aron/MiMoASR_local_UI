@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Mimo ASR 本地转写</title>
+    <link rel="stylesheet" href="/static/styles.css">
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <div>
+          <h1>Mimo ASR 本地转写</h1>
+          <p>拖入音频，生成 Markdown，可选说话人和时间戳标注。</p>
+        </div>
+        <button class="icon-button" id="settingsButton" type="button" aria-label="设置" title="设置">⚙</button>
+      </header>
+
+      <section class="status-strip" id="credentialStatus">
+        <span id="mimoStatus">Xiaomi ASR API Key：检查中</span>
+        <span id="hfStatus">Hugging Face Token：检查中</span>
+      </section>
+
+      <section class="workspace">
+        <form id="jobForm" class="panel">
+          <label class="dropzone" id="dropzone">
+            <input id="audioInput" name="audio" type="file" accept="audio/*,.m4a,.mp3,.wav,.aac,.flac" hidden>
+            <span class="drop-title">拖入音频文件</span>
+            <span class="drop-subtitle" id="fileName">或点击选择本地音频</span>
+          </label>
+
+          <div class="grid">
+            <label>
+              <span>识别语言</span>
+              <select name="language">
+                <option value="auto" selected>自动识别</option>
+                <option value="zh">中文</option>
+                <option value="en">英文</option>
+                <option value="ja">日文</option>
+                <option value="ko">韩文</option>
+              </select>
+            </label>
+
+            <label>
+              <span>音频处理</span>
+              <select name="strategy">
+                <option value="wav" selected>WAV 无损分段</option>
+                <option value="auto">自动</option>
+                <option value="split">后备切片</option>
+                <option value="compress">MP3 压缩</option>
+              </select>
+            </label>
+          </div>
+
+          <fieldset>
+            <legend>说话人和时间戳</legend>
+            <label class="choice">
+              <input type="radio" name="annotation_mode" value="none" checked>
+              <span>不需要：只输出普通转写 Markdown，速度最快。</span>
+            </label>
+            <label class="choice">
+              <input type="radio" name="annotation_mode" value="light">
+              <span>轻量化方案：不调用额外模型，几乎无额外等待；说话人和时间戳来自文本估算。</span>
+            </label>
+            <label class="choice">
+              <input type="radio" name="annotation_mode" value="pyannote">
+              <span>pyannote 方案：本地音频说话人分离，耗时更久、依赖模型缓存；说话人区分更可靠。</span>
+            </label>
+          </fieldset>
+
+          <section class="subpanel" id="pyannoteOptions" hidden>
+            <div class="segmented">
+              <label><input type="radio" name="speaker_mode" value="auto" checked> 不指定人数</label>
+              <label><input type="radio" name="speaker_mode" value="fixed"> 固定人数</label>
+              <label><input type="radio" name="speaker_mode" value="range"> 人数范围</label>
+            </div>
+            <div class="grid">
+              <label class="speaker-fixed">
+                <span>固定人数</span>
+                <input type="number" name="num_speakers" min="1" value="2">
+              </label>
+              <label class="speaker-range">
+                <span>最少人数</span>
+                <input type="number" name="min_speakers" min="1" value="2">
+              </label>
+              <label class="speaker-range">
+                <span>最多人数</span>
+                <input type="number" name="max_speakers" min="1" value="4">
+              </label>
+            </div>
+          </section>
+
+          <details class="advanced">
+            <summary>高级参数</summary>
+            <div class="grid">
+              <label><span>切片秒数</span><input type="number" name="chunk_seconds" min="1" value="{{ defaults.chunk_seconds }}"></label>
+              <label><span>单段最大秒数</span><input type="number" name="max_single_seconds" min="1" value="{{ defaults.max_single_seconds }}"></label>
+              <label><span>最大输出 token</span><input type="number" name="max_tokens" min="1" value="{{ defaults.max_tokens }}"></label>
+              <label><span>异常二次切分秒数</span><input type="number" name="subdivide_seconds" min="1" value="{{ defaults.subdivide_seconds }}"></label>
+              <label><span>最短二次切分秒数</span><input type="number" name="min_subdivide_seconds" min="1" value="{{ defaults.min_subdivide_seconds }}"></label>
+              <label><span>静音搜索窗口</span><input type="number" name="silence_search_seconds" min="0" value="{{ defaults.silence_search_seconds }}"></label>
+              <label><span>静音阈值 dBFS</span><input type="number" name="silence_dbfs" step="0.5" value="{{ defaults.silence_dbfs }}"></label>
+              <label><span>请求间隔秒数</span><input type="number" name="between_requests" min="0" value="{{ defaults.between_requests }}"></label>
+              <label><span>429 重试次数</span><input type="number" name="retry_attempts" min="1" value="{{ defaults.retry_attempts }}"></label>
+              <label><span>429 基础等待秒数</span><input type="number" name="retry_wait" min="0" value="{{ defaults.retry_wait }}"></label>
+              <label><span>pyannote 设备</span>
+                <select name="diarization_device">
+                  <option value="auto" selected>自动</option>
+                  <option value="cuda">NVIDIA CUDA</option>
+                  <option value="cpu">CPU</option>
+                  <option value="mps">Apple MPS</option>
+                </select>
+              </label>
+              <label><span>pyannote 分割 batch</span><input type="number" name="diarization_segmentation_batch_size" min="1" value="{{ defaults.diarization_segmentation_batch_size }}"></label>
+              <label><span>pyannote 嵌入 batch</span><input type="number" name="diarization_embedding_batch_size" min="1" value="{{ defaults.diarization_embedding_batch_size }}"></label>
+            </div>
+            <label class="choice"><input type="checkbox" name="keep_cache"> 保留分段转写缓存</label>
+            <label class="choice"><input type="checkbox" name="no_auto_subdivide"> 关闭异常重复自动二次切分</label>
+          </details>
+
+          <div class="actions">
+            <button class="primary" id="startButton" type="submit">开始转写</button>
+            <span id="formMessage"></span>
+          </div>
+        </form>
+
+        <aside class="panel side">
+          <div class="side-header">
+            <h2>任务日志</h2>
+            <span class="pill" id="jobState">空闲</span>
+          </div>
+          <pre id="logBox"></pre>
+          <h2>输出文件</h2>
+          <div id="results" class="results"></div>
+        </aside>
+      </section>
+    </main>
+
+    <dialog id="settingsDialog">
+      <form id="settingsForm" method="dialog" class="settings-form">
+        <header>
+          <h2>设置</h2>
+          <button type="button" class="icon-button" id="closeSettings" aria-label="关闭" title="关闭">×</button>
+        </header>
+        <label>
+          <span>Xiaomi ASR API Key</span>
+          <input type="password" name="mimo_api_key" autocomplete="off" placeholder="保存后写入 .env">
+        </label>
+        <label>
+          <span>Hugging Face Token</span>
+          <input type="password" name="hf_token" autocomplete="off" placeholder="pyannote 方案需要">
+        </label>
+        <p class="hint">密钥只保存到当前项目的 .env，不会写入系统全局环境。已设置的密钥不会在页面中完整回显。</p>
+        <p class="hint">使用 pyannote 前，还需要在 Hugging Face 接受 pyannote/speaker-diarization-3.1 及相关模型条款；Token 使用 Read 类型即可。</p>
+        <footer>
+          <button type="button" id="saveSettings" class="primary">保存设置</button>
+          <span id="settingsMessage"></span>
+        </footer>
+      </form>
+    </dialog>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>
