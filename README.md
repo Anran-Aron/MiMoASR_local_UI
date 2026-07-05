@@ -1,5 +1,7 @@
 # MiMoASR_local_UI
 
+[中文](README.md) | [English](README.en.md)
+
 本项目提供一个本地 Web UI，用于把音频转写为 Markdown。转写使用 `mimo-v2.5-asr`，可选轻量文本标注或 pyannote 本地说话人分离标注。
 
 ## 快速开始
@@ -32,7 +34,14 @@ start_ui.bat
 - `MIMO_API_KEY`：调用 Xiaomi Mimo ASR 必需；
 - `HF_TOKEN`：只有选择 pyannote 方案时需要。
 
-使用 pyannote 前，还需要在 Hugging Face 接受 `pyannote/speaker-diarization-3.1` 及相关模型条款。Token 选择 `Read` 类型即可。
+如果要使用 pyannote 方案，需要先完成 Hugging Face 配置：
+
+1. 注册或登录 [Hugging Face](https://huggingface.co/join)。
+2. 创建 [Access Token](https://huggingface.co/settings/tokens)，Token 类型选择 `Read` 即可。
+3. 打开并接受以下模型/依赖模型的使用条款：
+   - [pyannote/speaker-diarization-3.1](https://huggingface.co/pyannote/speaker-diarization-3.1)
+   - [pyannote/segmentation-3.0](https://huggingface.co/pyannote/segmentation-3.0)
+4. 回到本地 UI 设置页，把 Token 填入 `HF_TOKEN`。
 
 `.env`、`.venv`、模型缓存和输出缓存均在项目目录内或被 `.gitignore` 忽略，不应提交到 GitHub。
 
@@ -129,3 +138,7 @@ NVIDIA CUDA -> Apple MPS -> CPU
 ```
 
 这只对本机开放，一般不会暴露到局域网或公网。若端口被其他程序占用，请先关闭占用 `7860` 的程序，或修改 `app.py` 中的端口。
+
+## License
+
+本项目使用 [MIT License](LICENSE) 开源许可。
